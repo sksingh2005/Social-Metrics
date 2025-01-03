@@ -5,10 +5,12 @@ export interface EngagementMetrics {
 }
 
 export interface PostAnalytics {
-  id: string;
-  type: 'carousel' | 'reel' | 'image';
-  metrics: EngagementMetrics;
-  timestamp: string;
+  Post_ID: string;
+  Post_Type: 'Static' | 'Carousel' | 'Reel';
+  Likes: number;
+  Shares: number;
+  Comments: number;
+  Date_Posted: string;
 }
 
 export interface PerformanceInsight {

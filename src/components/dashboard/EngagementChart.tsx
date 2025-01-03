@@ -20,9 +20,7 @@ export function EngagementChart({ data }: Props) {
           </button>
         </div>
       </div>
-      <div className="h-64 flex items-center justify-center text-gray-500">
-        Chart visualization will be implemented here
-      </div>
+      
     </div>
   );
 }

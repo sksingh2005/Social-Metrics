@@ -1,32 +1,45 @@
-import { useState, useEffect, useRef } from 'react';
-import { EngagementChart } from '../components/dashboard/EngagementChart';
+import React, { useState, useRef, useEffect } from 'react';
+import { format } from 'date-fns';
+import { DateRangePicker } from '../components/DateRangePicker';
+import { PieChart } from '../components/charts2/PieChart';
 import { PerformanceInsights } from '../components/dashboard/PerformanceInsights';
-import { PostTypeAnalysis } from '../components/dashboard/PostTypeAnalysis';
+
+import { BarChart3, TrendingUp, MessageCircle, Share2 } from 'lucide-react';
+import { useAnalytics } from '../components/hooks/useAnalytics';
+import { TimeSeriesChart } from '../components/charts2/TimeSeriesChart';
+import { EngagementChart2 } from '../components/EngagementChart2';
 import { PostAnalytics, PerformanceInsight } from '../types/analytics';
+import { EngagementChart } from '../components/dashboard/EngagementChart';
+import { PostTypeAnalysis } from '../components/dashboard/PostTypeAnalysis';
 
-const mockAnalytics: PostAnalytics[] = [];
-const mockInsights: PerformanceInsight[] = [
-  {
-    title: 'Overall Engagement',
-    description: 'Engagement rate across all post types',
-    metric: '8.2%',
-    change: 12.5
-  },
-  {
-    title: 'Comment Activity',
-    description: 'Average comments per post',
-    metric: '24',
-    change: -5.2
-  },
-  {
-    title: 'Share Rate',
-    description: 'Average shares per post',
-    metric: '156',
-    change: 28.3
-  }
-];
+export default function Dashboard() {
+  const [startDate, setStartDate] = useState(format(new Date('2024-12-01'), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date('2024-12-10'), 'yyyy-MM-dd'));
+  const mockAnalytics: PostAnalytics[] = [];
+  const mockInsights: PerformanceInsight[] = [
+    {
+      title: 'Overall Engagement',
+      description: 'Engagement rate across all post types',
+      metric: '8.2%',
+      change: 12.5,
+    },
+    {
+      title: 'Comment Activity',
+      description: 'Average comments per post',
+      metric: '24',
+      change: -5.2,
+    },
+    {
+      title: 'Share Rate',
+      description: 'Average shares per post',
+      metric: '156',
+      change: 28.3,
+    },
+  ];
 
-export function Dashboard() {
+  const { filteredData, metrics } = useAnalytics(startDate, endDate);
+
+  // Chat bot state and websocket
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<{ sender: 'self' | 'other'; text: string }[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -52,20 +65,39 @@ export function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 relative">
-      <div className="container mx-auto px-4 py-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <p className="text-gray-600">Track and analyze your social media performance</p>
-        </header>
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Social Media Analytics Dashboard</h1>
+            <p className="mt-2 text-gray-600">Track your social media performance metrics</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+            />
+          </div>
+        </div>
 
         <div className="space-y-6">
           <PerformanceInsights insights={mockInsights} />
+          <div className="mt-8">
+          <TimeSeriesChart data={filteredData} />
+        </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <EngagementChart data={mockAnalytics} />
             <PostTypeAnalysis data={mockAnalytics} />
           </div>
         </div>
+
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <EngagementChart2 data={filteredData} />
+          <PieChart data={filteredData} />
+        </div>
+
+        
       </div>
 
       {/* Chat Button */}
@@ -83,9 +115,7 @@ export function Dashboard() {
           className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50"
           style={{ zIndex: 50 }}
         >
-          <div
-            className="bg-white w-3/5 h-3/5 rounded-lg shadow-lg flex flex-col"
-          >
+          <div className="bg-white w-3/5 h-3/5 rounded-lg shadow-lg flex flex-col">
             {/* Chat Header */}
             <div className="p-4 bg-blue-600 text-white font-bold flex justify-between">
               <span>Chat</span>
@@ -102,9 +132,7 @@ export function Dashboard() {
               {messages.map((msg, index) => (
                 <div
                   key={index}
-                  className={`mb-2 ${
-                    msg.sender === 'self' ? 'text-right' : 'text-left'
-                  }`}
+                  className={`mb-2 ${msg.sender === 'self' ? 'text-right' : 'text-left'}`}
                 >
                   <span
                     className={`inline-block p-2 rounded-lg ${
