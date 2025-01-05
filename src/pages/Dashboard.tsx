@@ -1,20 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { PieChart } from '../components/charts2/PieChart';
 import { PerformanceInsights } from '../components/dashboard/PerformanceInsights';
 
-import { BarChart3, TrendingUp, MessageCircle, Share2 } from 'lucide-react';
 import { useAnalytics } from '../components/hooks/useAnalytics';
 import { TimeSeriesChart } from '../components/charts2/TimeSeriesChart';
 import { EngagementChart2 } from '../components/EngagementChart2';
 import { PostAnalytics, PerformanceInsight } from '../types/analytics';
-import { EngagementChart } from '../components/dashboard/EngagementChart';
 import { PostTypeAnalysis } from '../components/dashboard/PostTypeAnalysis';
+import { MessageCircle, Send, Loader2 } from 'lucide-react';
 
-export default function Dashboard() {
+const Dashboard = () => {
+  // State for date range
   const [startDate, setStartDate] = useState(format(new Date('2024-12-01'), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date('2024-12-10'), 'yyyy-MM-dd'));
+
+  // Mock data
   const mockAnalytics: PostAnalytics[] = [];
   const mockInsights: PerformanceInsight[] = [
     {
@@ -37,31 +39,78 @@ export default function Dashboard() {
     },
   ];
 
-  const { filteredData, metrics } = useAnalytics(startDate, endDate);
+  const { filteredData } = useAnalytics(startDate, endDate);
 
-  // Chat bot state and websocket
+  // Chatbot state
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [messages, setMessages] = useState<{ sender: 'self' | 'other'; text: string }[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const ws = useRef<WebSocket | null>(null);
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [ws, setWs] = useState(null);
+  const [error, setError] = useState(null);
 
+  // WebSocket connection setup
   useEffect(() => {
-    ws.current = new WebSocket('ws://localhost:8080');
-    ws.current.onmessage = (event) => {
-      setMessages((prev) => [...prev, { sender: 'other', text: event.data }]);
+    const wsConnection = new WebSocket('wss://social-metrics-2-1.onrender.com/');
+
+    wsConnection.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === 'response') {
+        setMessages((prev) => [...prev, { text: data.message, type: 'response' }]);
+        setIsLoading(false);
+      } else if (data.type === 'error') {
+        setError(data.message);
+        setIsLoading(false);
+      }
     };
 
+    wsConnection.onerror = () => {
+      setError('WebSocket connection error');
+      setIsLoading(false);
+    };
+
+    setWs(wsConnection);
+
     return () => {
-      ws.current?.close();
+      wsConnection.close();
     };
   }, []);
 
-  const sendMessage = () => {
-    if (ws.current && newMessage.trim()) {
-      ws.current.send(newMessage);
-      setMessages((prev) => [...prev, { sender: 'self', text: newMessage }]);
-      setNewMessage('');
+  // Send message handler
+  const sendMessage = useCallback(() => {
+    if (!inputMessage.trim() || !ws || isLoading) return;
+
+    setIsLoading(true);
+    setError(null);
+    setMessages((prev) => [...prev, { text: inputMessage, type: 'user' }]);
+
+    ws.send(
+      JSON.stringify({
+        type: 'message',
+        message: inputMessage,
+      })
+    );
+
+    setInputMessage('');
+  }, [inputMessage, ws, isLoading]);
+
+  // Function to render text with bold if wrapped in **
+  const renderMessageText = (text) => {
+    const regex = /\*\*(.*?)\*\*/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      parts.push(text.slice(lastIndex, match.index)); // Text before bold part
+      parts.push(<strong key={match.index}>{match[1]}</strong>); // Bold part
+      lastIndex = regex.lastIndex;
     }
+
+    parts.push(text.slice(lastIndex)); // Remaining text after last bold part
+
+    return parts;
   };
 
   return (
@@ -85,8 +134,8 @@ export default function Dashboard() {
         <div className="space-y-6">
           <PerformanceInsights insights={mockInsights} />
           <div className="mt-8">
-          <TimeSeriesChart data={filteredData} />
-        </div>
+            <TimeSeriesChart data={filteredData} />
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <PostTypeAnalysis data={mockAnalytics} />
           </div>
@@ -96,25 +145,19 @@ export default function Dashboard() {
           <EngagementChart2 data={filteredData} />
           <PieChart data={filteredData} />
         </div>
-
-        
       </div>
 
       {/* Chat Button */}
       <button
         className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none z-50"
-        style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 50 }}
         onClick={() => setIsChatOpen((prev) => !prev)}
       >
-        Chat
+        <MessageCircle />
       </button>
 
       {/* Chat Window */}
       {isChatOpen && (
-        <div
-          className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50"
-          style={{ zIndex: 50 }}
-        >
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white w-3/5 h-3/5 rounded-lg shadow-lg flex flex-col">
             {/* Chat Header */}
             <div className="p-4 bg-blue-600 text-white font-bold flex justify-between">
@@ -132,19 +175,25 @@ export default function Dashboard() {
               {messages.map((msg, index) => (
                 <div
                   key={index}
-                  className={`mb-2 ${msg.sender === 'self' ? 'text-right' : 'text-left'}`}
+                  className={`mb-2 ${msg.type === 'user' ? 'text-right' : 'text-left'}`}
                 >
                   <span
                     className={`inline-block p-2 rounded-lg ${
-                      msg.sender === 'self'
+                      msg.type === 'user'
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-gray-200 text-gray-800'
                     }`}
                   >
-                    {msg.text}
+                    {renderMessageText(msg.text)}
                   </span>
                 </div>
               ))}
+              {isLoading && (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Loader2 className="animate-spin" />
+                  <span>Processing...</span>
+                </div>
+              )}
             </div>
 
             {/* Chat Input */}
@@ -153,14 +202,17 @@ export default function Dashboard() {
                 type="text"
                 className="flex-grow p-2 border border-gray-300 rounded-lg focus:outline-none"
                 placeholder="Type your message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                disabled={isLoading}
               />
               <button
-                className="ml-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="ml-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 onClick={sendMessage}
+                disabled={isLoading || !inputMessage.trim()}
               >
-                Send
+                <Send size={20} />
               </button>
             </div>
           </div>
@@ -168,4 +220,6 @@ export default function Dashboard() {
       )}
     </div>
   );
-}
+};
+
+export default Dashboard;
