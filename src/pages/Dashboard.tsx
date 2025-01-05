@@ -51,7 +51,7 @@ const Dashboard = () => {
 
   // WebSocket connection setup
   useEffect(() => {
-    const wsConnection = new WebSocket('wss://social-metrics-2-1.onrender.com/');
+    const wsConnection = new WebSocket('ws://localhost:8080');
 
     wsConnection.onmessage = (event) => {
       const data = JSON.parse(event.data);
