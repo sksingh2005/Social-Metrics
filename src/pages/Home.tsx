@@ -2,27 +2,27 @@ import { BarChart2, Users, Zap, MessageCircle, Lightbulb } from 'lucide-react';
 import { HeroSection } from '../components/home/HeroSection';
 import { ChartsSection } from '../components/charts/ChartsSection';
 import { Github, Linkedin, Mail } from 'lucide-react';
-
+ // {
+ //      name: "Shashank Singh",
+ //      role: "Full Stack Developer",
+ //      description: "Specializes in building scalable web applications using React, Node.js, and cloud technologies. Expert in system architecture and performance optimization.",
+ //      icon: <Users className="w-6 h-6 text-blue-600" />,
+ //      social: {
+ //        github: "https://github.com",
+ //        linkedin: "https://www.linkedin.com/in/shashank-singh-584860280/",
+ //        email: "shashanksgh3@gmail.com"
+ //      }
+ //    },
   const teamMembers = [
+   
     {
-      name: "Shashank Singh",
-      role: "Full Stack Developer",
-      description: "Specializes in building scalable web applications using React, Node.js, and cloud technologies. Expert in system architecture and performance optimization.",
-      icon: <Users className="w-6 h-6 text-blue-600" />,
-      social: {
-        github: "https://github.com",
-        linkedin: "https://www.linkedin.com/in/shashank-singh-584860280/",
-        email: "shashanksgh3@gmail.com"
-      }
-    },
-    {
-      name: "Sushant Tiwari",
+      name: "Sujal Mahajan",
       role: "Langflow Engineer",
       description: "Expert in natural language processing and LangFlow implementation. Focuses on building intelligent conversation systems and AI integrations.",
       icon: <Users className="w-6 h-6 text-purple-600" />,
       social: {
         github: "https://github.com",
-        linkedin: "https://www.linkedin.com/in/sushant-tiwari-b9619128a/",
+        linkedin: "https://www.linkedin.com/in",
         email: "mailto:sushant@example.com"
       }
     },
@@ -38,13 +38,13 @@ import { Github, Linkedin, Mail } from 'lucide-react';
       }
     },
     {
-      name: "Nishant Raj",
+      name: "Vishal Saini",
       role: "UI/UX Designer",
       description: "Creative designer focused on user-centered design principles. Expertise in creating intuitive and engaging digital experiences.",
       icon: <Users className="w-6 h-6 text-indigo-600" />,
       social: {
         github: "https://github.com",
-        linkedin: "https://www.linkedin.com/in/nishant-raj-742105295/",
+        linkedin: "https://www.linkedin.com/in",
         email: "mailto:nishant@example.com"
       }
     }
